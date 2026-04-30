@@ -24,5 +24,60 @@
         "abort": {
             "already_configured": "This VIN is already configured."
         }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Polestar (PCCS) options",
+                "description": "How often (in seconds) to poll the Polestar backend for fresh telemetry. Lower is more responsive but uses more battery on the car's modem. Minimum 10 seconds.",
+                "data": {
+                    "scan_interval": "Polling interval (seconds)"
+                }
+            }
+        }
+    },
+    "entity": {
+        "binary_sensor": {
+            "plugged_in": { "name": "Plugged in" },
+            "charging": { "name": "Charging" },
+            "locked": { "name": "Locked" },
+            "any_door_open": { "name": "Any door open" },
+            "any_window_open": { "name": "Any window open" },
+            "tailgate_open": { "name": "Tailgate" },
+            "hood_open": { "name": "Hood" },
+            "online": { "name": "Online" },
+            "in_use": { "name": "In use" }
+        },
+        "device_tracker": {
+            "location": { "name": "Location" }
+        },
+        "sensor": {
+            "battery_level": { "name": "Battery" },
+            "range": { "name": "Range" },
+            "time_to_full": { "name": "Time to full" },
+            "charging_power": { "name": "Charging power" },
+            "charging_status": {
+                "name": "Charging status",
+                "state": {
+                    "charging": "Charging",
+                    "charge_level_is_good_to_go": "Charged enough to go",
+                    "charging_is_en_route": "Charging en route",
+                    "charging_towards_min_soc": "Charging towards minimum",
+                    "idle": "Idle",
+                    "scheduled": "Scheduled",
+                    "scheduled_charging_cannot_complete": "Scheduled — cannot complete",
+                    "scheduled_charging_will_complete": "Scheduled — will complete",
+                    "discharging": "Discharging",
+                    "discharging_v2h": "Discharging (V2H)",
+                    "discharging_v2l": "Discharging (V2L)",
+                    "smart_charging": "Smart charging",
+                    "smart_charging_paused": "Smart charging — paused",
+                    "smart_charging_will_not_finish": "Smart charging — will not finish",
+                    "error": "Error",
+                    "done": "Done"
+                }
+            },
+            "cabin_temperature": { "name": "Cabin temperature" }
+        }
     }
 }

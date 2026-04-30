@@ -8,5 +8,9 @@
   "documentation": "https://github.com/Yeetusbleetus/hass-polestar-pccs",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/Yeetusbleetus/hass-polestar-pccs/issues",
+  "requirements": [
+    "grpcio>=1.80.0",
+    "protobuf>=5.29.0"
+  ],
   "version": "0.1.0"
 }

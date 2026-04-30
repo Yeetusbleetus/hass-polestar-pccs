@@ -31,7 +31,15 @@ from .api import (
     new_state,
     parse_redirect_url,
 )
-from .const import CONF_TOKENS, CONF_VIN, DOMAIN, LOGGER
+from .const import (
+    CONF_SCAN_INTERVAL,
+    CONF_TOKENS,
+    CONF_VIN,
+    DEFAULT_SCAN_INTERVAL_SECONDS,
+    DOMAIN,
+    LOGGER,
+    MIN_SCAN_INTERVAL_SECONDS,
+)
 
 VIN_LENGTH = 17
 
@@ -40,6 +48,13 @@ class PolestarPccsFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
     """Config flow for Polestar (PCCS)."""
 
     VERSION = 1
+
+    @staticmethod
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,
+    ) -> PolestarPccsOptionsFlow:
+        """Return the options flow handler."""
+        return PolestarPccsOptionsFlow()
 
     def __init__(self) -> None:
         """Initialize transient flow state."""
@@ -150,4 +165,42 @@ class PolestarPccsFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
                 },
             ),
             errors=errors,
+        )
+
+
+class PolestarPccsOptionsFlow(config_entries.OptionsFlow):
+    """Options flow for tunable runtime settings (currently: poll cadence)."""
+
+    async def async_step_init(
+        self,
+        user_input: dict[str, Any] | None = None,
+    ) -> config_entries.ConfigFlowResult:
+        """Show / accept the polling-interval option.
+
+        The integration's update listener calls async_reload_entry whenever
+        options change, which rebuilds the coordinator with the new interval —
+        no extra plumbing needed here.
+        """
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        current = self.config_entry.options.get(
+            CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_SECONDS
+        )
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_SCAN_INTERVAL, default=current
+                    ): selector.NumberSelector(
+                        selector.NumberSelectorConfig(
+                            min=MIN_SCAN_INTERVAL_SECONDS,
+                            step=1,
+                            unit_of_measurement="s",
+                            mode=selector.NumberSelectorMode.BOX,
+                        ),
+                    ),
+                },
+            ),
         )
