@@ -1,0 +1,12 @@
+{
+  "domain": "polestar_pccs",
+  "name": "Polestar (PCCS)",
+  "codeowners": [
+    "@Yeetusbleetus"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/Yeetusbleetus/hass-polestar-pccs",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/Yeetusbleetus/hass-polestar-pccs/issues",
+  "version": "0.1.0"
+}

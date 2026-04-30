@@ -1,0 +1,28 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Polestar (PCCS)",
+                "description": "Enter the VIN of the Polestar you want to track. You can find it on your registration documents, or in the Polestar app under “Car info”.",
+                "data": {
+                    "vin": "VIN"
+                }
+            },
+            "login": {
+                "title": "Sign in with Polestar ID",
+                "description": "1. Open this URL in any browser and sign in with your Polestar ID:\n\n[Sign in to Polestar ID]({auth_url})\n\n2. After you sign in, the browser will try to redirect to a URL starting with `polestar-explore://` and will fail with “unknown protocol” — that is expected.\n\n3. Copy the **full** URL from the browser's address bar and paste it below.",
+                "data": {
+                    "redirected_url": "Redirected URL"
+                }
+            }
+        },
+        "error": {
+            "auth": "Authentication failed. Double-check that you pasted the full redirected URL.",
+            "connection": "Could not reach Polestar ID. Check your internet connection and try again.",
+            "invalid_vin": "VIN must be 17 characters."
+        },
+        "abort": {
+            "already_configured": "This VIN is already configured."
+        }
+    }
+}

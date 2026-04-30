@@ -1,0 +1,153 @@
+"""Config flow for Polestar (PCCS).
+
+Two-step setup:
+
+1. ``user``  — ask for the VIN.
+2. ``login`` — render the Polestar ID authorization URL, ask the user to
+   sign in and paste the ``polestar-explore://…`` URL their browser fails
+   to redirect to. We extract the auth code, exchange it for tokens, and
+   create the config entry.
+
+The PKCE verifier and OAuth state are kept in flow-handler instance
+attributes between the two steps.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+import voluptuous as vol
+from homeassistant import config_entries
+from homeassistant.helpers import selector
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
+
+from .api import (
+    PolestarPccsAuthError,
+    PolestarPccsConnectionError,
+    build_authorization_url,
+    discover_endpoints,
+    exchange_code_for_tokens,
+    new_pkce,
+    new_state,
+    parse_redirect_url,
+)
+from .const import CONF_TOKENS, CONF_VIN, DOMAIN, LOGGER
+
+VIN_LENGTH = 17
+
+
+class PolestarPccsFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
+    """Config flow for Polestar (PCCS)."""
+
+    VERSION = 1
+
+    def __init__(self) -> None:
+        """Initialize transient flow state."""
+        self._vin: str | None = None
+        self._code_verifier: str | None = None
+        self._state: str | None = None
+        self._auth_url: str | None = None
+        self._token_endpoint: str | None = None
+
+    async def async_step_user(
+        self,
+        user_input: dict[str, Any] | None = None,
+    ) -> config_entries.ConfigFlowResult:
+        """Step 1: collect the VIN, then build the authorization URL."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            vin = user_input[CONF_VIN].strip().upper()
+            if len(vin) != VIN_LENGTH:
+                errors[CONF_VIN] = "invalid_vin"
+            else:
+                await self.async_set_unique_id(vin)
+                self._abort_if_unique_id_configured()
+
+                self._vin = vin
+                verifier, challenge = new_pkce()
+                state = new_state()
+                nonce = new_state()
+                self._code_verifier = verifier
+                self._state = state
+
+                session = async_get_clientsession(self.hass)
+                try:
+                    discovery = await discover_endpoints(session)
+                except PolestarPccsConnectionError as exc:
+                    LOGGER.error("OIDC discovery failed: %s", exc)
+                    errors["base"] = "connection"
+                else:
+                    self._token_endpoint = discovery["token_endpoint"]
+                    self._auth_url = build_authorization_url(
+                        discovery["authorization_endpoint"], state, nonce, challenge
+                    )
+                    return await self.async_step_login()
+
+        return self.async_show_form(
+            step_id="user",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_VIN,
+                        default=(user_input or {}).get(CONF_VIN, vol.UNDEFINED),
+                    ): selector.TextSelector(
+                        selector.TextSelectorConfig(
+                            type=selector.TextSelectorType.TEXT,
+                        ),
+                    ),
+                },
+            ),
+            errors=errors,
+        )
+
+    async def async_step_login(
+        self,
+        user_input: dict[str, Any] | None = None,
+    ) -> config_entries.ConfigFlowResult:
+        """Step 2: render the auth URL and consume the redirected URL."""
+        errors: dict[str, str] = {}
+        assert self._vin is not None  # noqa: S101 — set in step 1
+        assert self._auth_url is not None  # noqa: S101
+        assert self._token_endpoint is not None  # noqa: S101
+        assert self._code_verifier is not None  # noqa: S101
+        assert self._state is not None  # noqa: S101
+
+        if user_input is not None:
+            redirected_url: str = user_input["redirected_url"]
+            try:
+                code = parse_redirect_url(redirected_url, self._state)
+                session = async_get_clientsession(self.hass)
+                tokens = await exchange_code_for_tokens(
+                    session, self._token_endpoint, code, self._code_verifier
+                )
+            except PolestarPccsAuthError as exc:
+                LOGGER.warning("Polestar ID auth failed: %s", exc)
+                errors["base"] = "auth"
+            except PolestarPccsConnectionError as exc:
+                LOGGER.error("Polestar ID connection error: %s", exc)
+                errors["base"] = "connection"
+            else:
+                return self.async_create_entry(
+                    title=f"Polestar {self._vin[-6:]}",
+                    data={
+                        CONF_VIN: self._vin,
+                        CONF_TOKENS: tokens,
+                    },
+                )
+
+        return self.async_show_form(
+            step_id="login",
+            description_placeholders={"auth_url": self._auth_url},
+            data_schema=vol.Schema(
+                {
+                    vol.Required("redirected_url"): selector.TextSelector(
+                        selector.TextSelectorConfig(
+                            type=selector.TextSelectorType.TEXT,
+                            multiline=True,
+                        ),
+                    ),
+                },
+            ),
+            errors=errors,
+        )
