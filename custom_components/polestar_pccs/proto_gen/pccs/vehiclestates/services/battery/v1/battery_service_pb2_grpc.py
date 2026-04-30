@@ -5,7 +5,7 @@ import warnings
 
 from pccs.vehiclestates.services.battery.v1 import battery_service_pb2 as pccs_dot_vehiclestates_dot_services_dot_battery_dot_v1_dot_battery__service__pb2
 
-GRPC_GENERATED_VERSION = '1.80.0'
+GRPC_GENERATED_VERSION = '1.78.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 

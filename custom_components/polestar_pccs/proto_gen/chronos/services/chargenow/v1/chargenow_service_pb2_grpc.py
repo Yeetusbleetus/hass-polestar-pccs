@@ -5,7 +5,7 @@ import warnings
 
 from chronos.services.chargenow.v1 import chargenow_service_pb2 as chronos_dot_services_dot_chargenow_dot_v1_dot_chargenow__service__pb2
 
-GRPC_GENERATED_VERSION = '1.80.0'
+GRPC_GENERATED_VERSION = '1.78.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 

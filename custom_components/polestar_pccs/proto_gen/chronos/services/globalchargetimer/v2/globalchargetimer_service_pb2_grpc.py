@@ -5,7 +5,7 @@ import warnings
 
 from chronos.services.globalchargetimer.v2 import globalchargetimer_service_pb2 as chronos_dot_services_dot_globalchargetimer_dot_v2_dot_globalchargetimer__service__pb2
 
-GRPC_GENERATED_VERSION = '1.80.0'
+GRPC_GENERATED_VERSION = '1.78.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 

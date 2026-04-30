@@ -5,7 +5,7 @@ import warnings
 
 from pccs.location.v1 import location_service_pb2 as pccs_dot_location_dot_v1_dot_location__service__pb2
 
-GRPC_GENERATED_VERSION = '1.80.0'
+GRPC_GENERATED_VERSION = '1.78.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 

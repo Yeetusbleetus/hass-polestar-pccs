@@ -5,7 +5,7 @@ import warnings
 
 from dtlinternet import dtl_internet_service_pb2 as dtlinternet_dot_dtl__internet__service__pb2
 
-GRPC_GENERATED_VERSION = '1.80.0'
+GRPC_GENERATED_VERSION = '1.78.0'
 GRPC_VERSION = grpc.__version__
 _version_not_supported = False
 
