@@ -13,11 +13,11 @@ import time
 from datetime import timedelta
 from typing import TYPE_CHECKING, Any
 
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import (
     PolestarPccsAuthError,
-    PolestarPccsConnectionError,
     discover_endpoints,
     refresh_tokens,
 )
@@ -113,9 +113,7 @@ class PolestarPccsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
             refresh_token = self._tokens.get("refresh_token")
             if not refresh_token:
-                raise PolestarPccsAuthError(
-                    "no refresh_token; remove and re-add the integration"
-                )
+                raise PolestarPccsAuthError("no refresh_token stored")
 
             new_tokens = await refresh_tokens(
                 self._session, self._token_endpoint, refresh_token
@@ -130,32 +128,53 @@ class PolestarPccsCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch every supported entity in parallel.
 
-        Per-entity failures are logged and that key is left as ``None`` so the
-        rest of the sensors keep updating. The whole poll only fails (raising
-        ``UpdateFailed``) when the auth / token-refresh path itself blows up —
-        in that case nothing can be fetched.
+        Per-entity failures are logged and the previous value (or ``None``) is
+        kept so the rest of the sensors keep updating. An auth error means the
+        refresh token is dead — raising ``ConfigEntryAuthFailed`` hands off to
+        HA's reauth flow, which prompts the user to sign in again without
+        removing the entry.
         """
-        try:
-            results = await asyncio.gather(
-                self.client.get_latest_battery(self.vin),
-                self.client.get_latest_exterior(self.vin),
-                self.client.get_latest_availability(self.vin),
-                self.client.get_latest_parking_climatization(self.vin),
-                self.client.get_last_known_location(self.vin),
-                self.client.get_last_parked_location(self.vin),
-                return_exceptions=True,
-            )
-        except (PolestarPccsAuthError, PolestarPccsConnectionError) as exc:
-            raise UpdateFailed(f"auth/connection error: {exc}") from exc
+        results = await asyncio.gather(
+            self.client.get_latest_battery(self.vin),
+            self.client.get_latest_exterior(self.vin),
+            self.client.get_latest_availability(self.vin),
+            self.client.get_latest_parking_climatization(self.vin),
+            self.client.get_last_known_location(self.vin),
+            self.client.get_last_parked_location(self.vin),
+            return_exceptions=True,
+        )
+
+        # PolestarPccsAuthError only originates from the token-refresh path
+        # (invalid_grant / revoked refresh token), never from a flaky gRPC
+        # call, so it is a reliable "re-login needed" signal.
+        for result in results:
+            if isinstance(result, PolestarPccsAuthError):
+                raise ConfigEntryAuthFailed(
+                    f"Polestar ID session expired: {result}"
+                ) from result
 
         previous = self.data or {}
         out: dict[str, Any] = {}
+        failed = 0
         for key, result in zip(DATA_KEYS, results, strict=True):
-            if isinstance(result, Exception):
+            if isinstance(result, BaseException):
+                failed += 1
                 LOGGER.debug("%s fetch failed: %s", key, result)
                 # Keep the previous value if we have one — otherwise fail open
                 # to None. Stale-but-present is more useful than gaps in the UI.
                 out[key] = previous.get(key)
             else:
                 out[key] = result
+
+        if failed == len(DATA_KEYS):
+            # Nothing came back at all. With a prior snapshot, serve cached
+            # state and retry silently next poll; without one, fail the update
+            # so entities show as unavailable instead of empty.
+            if previous:
+                LOGGER.warning(
+                    "poll failed entirely, serving cached state: %s", results[0]
+                )
+                return out
+            raise UpdateFailed(f"all fetches failed: {results[0]}")
+
         return out

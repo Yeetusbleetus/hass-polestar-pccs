@@ -37,6 +37,12 @@ falling back to the last-parked fix when the car is offline. Exposes
    redirect to. The flow extracts the auth code, exchanges it for tokens,
    and creates the entry.
 
+Access tokens are refreshed automatically. If the refresh token itself
+expires or is revoked, Home Assistant shows a "Reauthentication required"
+notification — click **Reconfigure** on the entry and repeat the sign-in
+step above. Entities, history, and options are all preserved; there is no
+need to remove and re-add the integration.
+
 The polling interval defaults to 300 s and can be changed in the entry's
 options (floor: 10 s). 10 s is intentionally aggressive headroom for
 watching a charging session in real time; the default is fine for everyday

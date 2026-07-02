@@ -14,6 +14,13 @@
                 "data": {
                     "redirected_url": "Redirected URL"
                 }
+            },
+            "reauth_confirm": {
+                "title": "Re-authenticate with Polestar ID",
+                "description": "Your Polestar ID session has expired and needs to be renewed.\n\n1. Open this URL in any browser and sign in with your Polestar ID:\n\n[Sign in to Polestar ID]({auth_url})\n\n2. After you sign in, the browser will try to redirect to a URL starting with `polestar-explore://` and will fail with “unknown protocol” — that is expected.\n\n3. Copy the **full** URL from the browser's address bar and paste it below.",
+                "data": {
+                    "redirected_url": "Redirected URL"
+                }
             }
         },
         "error": {
@@ -22,7 +29,9 @@
             "invalid_vin": "VIN must be 17 characters."
         },
         "abort": {
-            "already_configured": "This VIN is already configured."
+            "already_configured": "This VIN is already configured.",
+            "cannot_connect": "Could not reach Polestar ID. You will be prompted to re-authenticate again automatically.",
+            "reauth_successful": "Re-authentication was successful."
         }
     },
     "options": {

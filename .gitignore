@@ -7,6 +7,7 @@ __pycache__
 
 
 # misc
+.claude/settings.local.json
 .coverage
 .vscode
 coverage.xml
